@@ -1,0 +1,17 @@
+{
+  "name": "system-injector",
+  "version": "1.0.0",
+  "description": "Install arbitrary APKs as system UID (1000) apps on the Humane AI Pin",
+  "type": "module",
+  "bin": {
+    "system-injector": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}

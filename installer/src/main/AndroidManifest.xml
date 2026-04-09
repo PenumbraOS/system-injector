@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:sharedUserId="android.uid.system"
+    tools:ignore="Deprecated">
+
+    <application
+        android:allowBackup="false"
+        android:label="SystemInjector"
+        android:process="system">
+
+        <receiver
+            android:name=".InstallReceiver"
+            android:process="system"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.penumbraos.systeminjector.INSTALL" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>
