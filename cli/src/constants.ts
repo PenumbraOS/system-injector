@@ -13,6 +13,10 @@ export const INSTALLER_RECEIVER = `${INSTALLER_PACKAGE}/.InstallReceiver`;
 /** Default device paths */
 export const DEVICE_TMP_DIR = "/data/local/tmp";
 
+/** Content provider authority for staging APKs into system_server's cache */
+export const STAGING_AUTHORITY = "com.penumbraos.systeminjector.staging";
+export const STAGING_URI = `content://${STAGING_AUTHORITY}`;
+
 /** Polling configuration */
 export const POLL_INTERVAL_MS = 3000;
 export const POLL_TIMEOUT_MS = 120000;

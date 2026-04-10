@@ -42,12 +42,14 @@ object PackagesXmlPatcher {
      * @param packageName The package name to inject (e.g. "com.penumbraos.systeminjector")
      * @param codePath The APK directory path (e.g. "/data/app/com.penumbraos.systeminjector-injected")
      * @param sharedUserId The numeric shared user ID (1000 for system)
+     * @param primaryCpuAbi The primary CPU ABI (e.g. "arm64-v8a") if native libs are present, null otherwise
      */
     fun insertPackage(
         document: Document,
         packageName: String,
         codePath: String,
-        sharedUserId: Int
+        sharedUserId: Int,
+        primaryCpuAbi: String? = null
     ) {
         val xPath = XPathFactory.newInstance().newXPath()
 
@@ -105,6 +107,9 @@ object PackagesXmlPatcher {
             setAttribute("codePath", codePath)
             setAttribute("sharedUserId", sharedUserId.toString())
             setAttribute("publicFlags", "0")
+            if (primaryCpuAbi != null) {
+                setAttribute("primaryCpuAbi", primaryCpuAbi)
+            }
             appendChild(
                 document.createElement("sigs").apply {
                     setAttribute("count", "1")

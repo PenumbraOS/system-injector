@@ -18,6 +18,12 @@
             </intent-filter>
         </receiver>
 
+        <provider
+            android:name=".StagingProvider"
+            android:authorities="com.penumbraos.systeminjector.staging"
+            android:process="system"
+            android:exported="true" />
+
     </application>
 
 </manifest>

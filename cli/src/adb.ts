@@ -1,5 +1,6 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
+import * as fs from "node:fs";
 
 const execFileAsync = promisify(execFile);
 
@@ -139,4 +140,46 @@ export async function pollForPackage(
     await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
   return false;
+}
+
+/**
+ * Write a local file to a content provider URI via `adb shell content write`.
+ *
+ * This pipes the file's bytes through Binder into the provider's `openFile()`
+ * method, bypassing filesystem SELinux labels entirely.
+ */
+export async function contentWrite(localPath: string, uri: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(ADB, ["shell", "content", "write", "--uri", uri], {
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    let stderr = "";
+    child.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
+
+    child.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(`content write failed (exit ${code}): ${stderr.trim()}`));
+      } else {
+        resolve();
+      }
+    });
+
+    child.on("error", reject);
+
+    const fileStream = fs.createReadStream(localPath);
+    fileStream.pipe(child.stdin);
+    fileStream.on("error", reject);
+  });
+}
+
+/**
+ * Call a content provider method via `adb shell content call`.
+ */
+export async function contentCall(uri: string, method: string, arg?: string): Promise<string> {
+  let cmd = `content call --uri ${uri} --method ${method}`;
+  if (arg) {
+    cmd += ` --arg ${arg}`;
+  }
+  return shell(cmd);
 }
