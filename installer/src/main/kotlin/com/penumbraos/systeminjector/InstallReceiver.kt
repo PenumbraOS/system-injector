@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.FileUtils
 import android.system.Os
 import android.util.Log
+import com.penumbraos.systeminjector.runtimepolicy.PolicyRegistry
 import java.io.File
 import java.util.zip.ZipFile
 
@@ -121,6 +122,10 @@ class InstallReceiver : BroadcastReceiver() {
             primaryCpuAbi = primaryCpuAbi
         )
         Log.i(TAG, "packages-backup.xml written")
+
+        check(PolicyRegistry.addTrackedPackage(context, result.packageName)) {
+            "Failed to register ${result.packageName} for runtime seInfo policy"
+        }
 
         // Clean up
         workDir.deleteRecursively()
