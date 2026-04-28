@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.FileUtils
 import android.system.Os
 import android.util.Log
+import com.penumbraos.systeminjector.runtimepolicy.AppDataProvisioner
 import com.penumbraos.systeminjector.runtimepolicy.PolicyRegistry
 import java.io.File
 import java.util.zip.ZipFile
@@ -122,6 +123,38 @@ class InstallReceiver : BroadcastReceiver() {
             primaryCpuAbi = primaryCpuAbi
         )
         Log.i(TAG, "packages-backup.xml written")
+
+// TODO: This doesn't fix the data provisioning problem. Kept around for now
+//        when (val provisionResult = AppDataProvisioner.ensureProvisionedForInstall(
+//            packageName = result.packageName,
+//            uid = 1000,
+//            targetSdkVersion = result.targetSdkVersion,
+//        )) {
+//            is AppDataProvisioner.Result.Applied -> {
+//                Log.i(
+//                    TAG,
+//                    "Install-time app-data provisioned for ${provisionResult.packageName}: " +
+//                        "userId=${provisionResult.userId}, " +
+//                        "flags=0x${provisionResult.flags.toString(16)}, " +
+//                        "appId=${provisionResult.appId}, " +
+//                        "targetSdkVersion=${provisionResult.targetSdkVersion}, " +
+//                        "seInfo=${provisionResult.seInfo}, " +
+//                        "ceDataInode=${provisionResult.ceDataInode}"
+//                )
+//            }
+//            is AppDataProvisioner.Result.PackageMissing -> {
+//                throw IllegalStateException("Install-time app-data provisioning unexpectedly reported package missing for ${provisionResult.packageName}")
+//            }
+//            is AppDataProvisioner.Result.NotEligible -> {
+//                throw IllegalStateException("Install-time app-data provisioning reported non-eligible package ${provisionResult.packageName} uid=${provisionResult.appUid ?: -1}")
+//            }
+//            is AppDataProvisioner.Result.Failed -> {
+//                throw IllegalStateException(
+//                    "Install-time app-data provisioning failed for ${provisionResult.packageName}: ${provisionResult.message}",
+//                    provisionResult.error,
+//                )
+//            }
+//        }
 
         check(PolicyRegistry.addTrackedPackage(context, result.packageName)) {
             "Failed to register ${result.packageName} for runtime seInfo policy"

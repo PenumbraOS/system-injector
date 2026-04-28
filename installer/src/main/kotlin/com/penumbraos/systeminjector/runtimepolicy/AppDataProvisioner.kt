@@ -3,11 +3,13 @@ package com.penumbraos.systeminjector.runtimepolicy
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.util.Log
+import java.io.File
 
 object AppDataProvisioner {
     private const val TAG = "RuntimePolicy"
     private const val TARGET_USER_ID = 0
-    private const val PROVISION_SEINFO = "platform:system_app"
+    private const val FALLBACK_PROVISION_SEINFO = "platform"
+    private const val INSTALL_PROVISION_SEINFO = "platform:complete"
     private const val FLAG_STORAGE_DE = 0x1
     private const val FLAG_STORAGE_CE = 0x2
     private const val PER_USER_RANGE = 100000
@@ -44,27 +46,63 @@ object AppDataProvisioner {
             return Result.NotEligible(packageName, appInfo.uid)
         }
 
+        return ensureProvisioned(
+            packageName = packageName,
+            uid = appInfo.uid,
+            targetSdkVersion = appInfo.targetSdkVersion,
+            provisionSeInfo = deriveProvisionSeInfo(appInfo),
+            appInfoForLogging = appInfo,
+        )
+    }
+
+    fun ensureProvisionedForInstall(
+        packageName: String,
+        uid: Int,
+        targetSdkVersion: Int,
+    ): Result {
+        if (uid != SHARED_USER_ID_SYSTEM) {
+            return Result.NotEligible(packageName, uid)
+        }
+
+        return ensureProvisioned(
+            packageName = packageName,
+            uid = uid,
+            targetSdkVersion = targetSdkVersion,
+            provisionSeInfo = INSTALL_PROVISION_SEINFO,
+            appInfoForLogging = null,
+        )
+    }
+
+    private fun ensureProvisioned(
+        packageName: String,
+        uid: Int,
+        targetSdkVersion: Int,
+        provisionSeInfo: String,
+        appInfoForLogging: ApplicationInfo?,
+    ): Result {
         return try {
             val installer = findInstaller()
                 ?: return Result.Failed(packageName, "PMS.mInstaller not found")
-            val appId = appInfo.uid % PER_USER_RANGE
+            val appId = uid % PER_USER_RANGE
             val flags = FLAG_STORAGE_DE or FLAG_STORAGE_CE
+            logProvisioningState("before", packageName, appInfoForLogging, uid, appId, flags, targetSdkVersion, provisionSeInfo)
             val ceDataInode = invokeCreateAppData(
                 installer = installer,
                 packageName = packageName,
                 userId = TARGET_USER_ID,
                 flags = flags,
                 appId = appId,
-                seInfo = PROVISION_SEINFO,
-                targetSdkVersion = appInfo.targetSdkVersion,
+                seInfo = provisionSeInfo,
+                targetSdkVersion = targetSdkVersion,
             )
+            logProvisioningState("after", packageName, appInfoForLogging, uid, appId, flags, targetSdkVersion, provisionSeInfo)
             Result.Applied(
                 packageName = packageName,
                 userId = TARGET_USER_ID,
                 flags = flags,
                 appId = appId,
-                targetSdkVersion = appInfo.targetSdkVersion,
-                seInfo = PROVISION_SEINFO,
+                targetSdkVersion = targetSdkVersion,
+                seInfo = provisionSeInfo,
                 ceDataInode = ceDataInode,
             )
         } catch (t: Throwable) {
@@ -86,6 +124,51 @@ object AppDataProvisioner {
         val getService = serviceManager.getDeclaredMethod("getService", String::class.java)
         val pms = getService.invoke(null, "package") ?: return null
         return readDeclaredField(pms, "mInstaller")
+    }
+
+    private fun deriveProvisionSeInfo(appInfo: ApplicationInfo): String {
+        val appSeInfo = readPublicStringField(appInfo, "seInfo")
+        val appSeInfoUser = readPublicStringField(appInfo, "seInfoUser")
+        return when {
+            !appSeInfo.isNullOrBlank() && !appSeInfoUser.isNullOrBlank() -> appSeInfo + appSeInfoUser
+            !appSeInfo.isNullOrBlank() -> appSeInfo
+            else -> FALLBACK_PROVISION_SEINFO
+        }
+    }
+
+    private fun logProvisioningState(
+        phase: String,
+        packageName: String,
+        appInfo: ApplicationInfo?,
+        uid: Int,
+        appId: Int,
+        flags: Int,
+        targetSdkVersion: Int,
+        provisionSeInfo: String,
+    ) {
+        val appSeInfo = appInfo?.let { readPublicStringField(it, "seInfo") }
+        val appSeInfoUser = appInfo?.let { readPublicStringField(it, "seInfoUser") }
+        val cePath = appInfo?.dataDir
+        val dePath = appInfo?.let { readPublicStringField(it, "deviceProtectedDataDir") }
+        val ceExists = cePath?.let { File(it).exists() } ?: false
+        val deExists = dePath?.let { File(it).exists() } ?: false
+        Log.i(
+            TAG,
+            "App-data provisioning $phase: " +
+                "package=$packageName, " +
+                "uid=$uid, " +
+                "userId=$TARGET_USER_ID, " +
+                "appId=$appId, " +
+                "flags=0x${flags.toString(16)}, " +
+                "targetSdkVersion=$targetSdkVersion, " +
+                "seInfoArg=$provisionSeInfo, " +
+                "appSeInfo=${appSeInfo ?: "<null>"}, " +
+                "appSeInfoUser=${appSeInfoUser ?: "<null>"}, " +
+                "cePath=${cePath ?: "<null>"}, " +
+                "ceExists=$ceExists, " +
+                "dePath=${dePath ?: "<null>"}, " +
+                "deExists=$deExists"
+        )
     }
 
     private fun invokeCreateAppData(
@@ -134,5 +217,13 @@ object AppDataProvisioner {
             }
         }
         return null
+    }
+
+    private fun readPublicStringField(target: Any, fieldName: String): String? {
+        return try {
+            target.javaClass.getField(fieldName).get(target) as? String
+        } catch (_: NoSuchFieldException) {
+            null
+        }
     }
 }

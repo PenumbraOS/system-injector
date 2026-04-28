@@ -33,7 +33,8 @@ object ApkPatcher {
      */
     data class PatchResult(
         val signedApk: File,
-        val packageName: String
+        val packageName: String,
+        val targetSdkVersion: Int,
     )
 
     /**
@@ -54,7 +55,9 @@ object ApkPatcher {
         workDir.mkdirs()
 
         val packageName = extractPackageName(inputApk)
+        val targetSdkVersion = extractTargetSdkVersion(inputApk)
         Log.i(TAG, "Extracted package name: $packageName")
+        Log.i(TAG, "Extracted targetSdkVersion: $targetSdkVersion")
 
         val patchedApk = File(workDir, "patched.apk")
         patchManifest(inputApk, patchedApk)
@@ -70,7 +73,7 @@ object ApkPatcher {
         // Clean up intermediate file
         patchedApk.delete()
 
-        return PatchResult(signedApk, packageName)
+        return PatchResult(signedApk, packageName, targetSdkVersion)
     }
 
     /**
@@ -78,13 +81,26 @@ object ApkPatcher {
      * Available on Android 12 (API 31/32).
      */
     private fun extractPackageName(apk: File): String {
+        val pkg = parsePackage(apk)
+        val packageNameField = pkg.javaClass.getField("packageName")
+        return packageNameField.get(pkg) as String
+    }
+
+    private fun extractTargetSdkVersion(apk: File): Int {
+        val pkg = parsePackage(apk)
+        val applicationInfoField = pkg.javaClass.getField("applicationInfo")
+        val applicationInfo = applicationInfoField.get(pkg)
+            ?: throw IllegalStateException("PackageParser returned null applicationInfo")
+        val targetSdkVersionField = applicationInfo.javaClass.getField("targetSdkVersion")
+        return targetSdkVersionField.getInt(applicationInfo)
+    }
+
+    private fun parsePackage(apk: File): Any {
         @Suppress("DEPRECATION")
         val parserClass = Class.forName("android.content.pm.PackageParser")
         val parser = parserClass.getDeclaredConstructor().newInstance()
         val parseMethod = parserClass.getMethod("parsePackage", File::class.java, Int::class.javaPrimitiveType)
-        val pkg = parseMethod.invoke(parser, apk, 0)
-        val packageNameField = pkg.javaClass.getField("packageName")
-        return packageNameField.get(pkg) as String
+        return parseMethod.invoke(parser, apk, 0)
     }
 
     /**

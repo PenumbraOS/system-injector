@@ -56,6 +56,14 @@ object ServerLaunchPatch {
         val baseSeInfo = invokeNoArgString(androidPackage, "getSeInfo")
         val overrideBefore = invokeNoArgString(pkgState, "getOverrideSeInfo")
         val effectiveBefore = overrideBefore ?: baseSeInfo
+        logPackageStateSnapshot(
+            context = context,
+            packageName = packageName,
+            phase = "before override",
+            baseSeInfo = baseSeInfo,
+            overrideSeInfo = overrideBefore,
+            effectiveSeInfo = effectiveBefore,
+        )
 
         if (overrideBefore == TARGET_SEINFO_BASE) {
             return Result.AlreadyApplied(packageName, baseSeInfo, overrideBefore, effectiveBefore)
@@ -74,6 +82,14 @@ object ServerLaunchPatch {
                 "overrideAfter=${overrideAfter ?: "<null>"}"
         )
 
+        logPackageStateSnapshot(
+            context = context,
+            packageName = packageName,
+            phase = "after override",
+            baseSeInfo = baseSeInfo,
+            overrideSeInfo = overrideAfter,
+            effectiveSeInfo = effectiveAfter,
+        )
         logGeneratedApplicationInfo(context, packageName)
 
         return Result.Applied(
@@ -123,6 +139,30 @@ object ServerLaunchPatch {
         } catch (t: Throwable) {
             Log.w(TAG, "Failed to read ApplicationInfo after override for $packageName", t)
         }
+    }
+
+    private fun logPackageStateSnapshot(
+        context: Context,
+        packageName: String,
+        phase: String,
+        baseSeInfo: String?,
+        overrideSeInfo: String?,
+        effectiveSeInfo: String?,
+    ) {
+        val appInfo = getApplicationInfo(context, packageName)
+        val appSeInfo = appInfo?.let { readPublicStringField(it, "seInfo") }
+        val appSeInfoUser = appInfo?.let { readPublicStringField(it, "seInfoUser") }
+        Log.i(
+            TAG,
+            "PackageState $phase: " +
+                "package=$packageName, " +
+                "baseSeInfo=${baseSeInfo ?: "<null>"}, " +
+                "overrideSeInfo=${overrideSeInfo ?: "<null>"}, " +
+                "effectiveSeInfo=${effectiveSeInfo ?: "<null>"}, " +
+                "appSeInfo=${appSeInfo ?: "<null>"}, " +
+                "appSeInfoUser=${appSeInfoUser ?: "<null>"}, " +
+                "uid=${appInfo?.uid ?: -1}"
+        )
     }
 
     private fun readDeclaredField(target: Any, fieldName: String): Any? {

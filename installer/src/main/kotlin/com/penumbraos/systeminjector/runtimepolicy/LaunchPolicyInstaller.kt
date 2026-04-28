@@ -24,44 +24,8 @@ object LaunchPolicyInstaller {
             val keptPackages = linkedSetOf<String>()
 
             for (packageName in trackedPackages.sorted()) {
-                when (val provisionResult = AppDataProvisioner.ensureProvisioned(context, packageName)) {
-                    is AppDataProvisioner.Result.Applied -> {
-                        Log.i(
-                            TAG,
-                            "Provisioned app data for ${provisionResult.packageName}: " +
-                                "userId=${provisionResult.userId}, " +
-                                "flags=0x${provisionResult.flags.toString(16)}, " +
-                                "appId=${provisionResult.appId}, " +
-                                "targetSdkVersion=${provisionResult.targetSdkVersion}, " +
-                                "seInfo=${provisionResult.seInfo}, " +
-                                "ceDataInode=${provisionResult.ceDataInode}"
-                        )
-                    }
-                    is AppDataProvisioner.Result.PackageMissing -> {
-                        Log.w(TAG, "Tracked package missing from PackageManager: ${provisionResult.packageName}")
-                        continue
-                    }
-                    is AppDataProvisioner.Result.NotEligible -> {
-                        Log.w(
-                            TAG,
-                            "Dropping non-eligible tracked package during provisioning: " +
-                                "package=${provisionResult.packageName}, uid=${provisionResult.appUid ?: -1}"
-                        )
-                        continue
-                    }
-                    is AppDataProvisioner.Result.Failed -> {
-                        Log.w(
-                            TAG,
-                            "Dropping tracked package after provisioning failure: " +
-                                "package=${provisionResult.packageName}, error=${provisionResult.message}"
-                        )
-                        continue
-                    }
-                }
-
                 when (val result = ServerLaunchPatch.applyOverride(context, packageName)) {
                     is ServerLaunchPatch.Result.Applied -> {
-                        keptPackages.add(result.packageName)
                         Log.i(
                             TAG,
                             "Applied seInfo override for ${result.packageName}: " +
@@ -73,7 +37,6 @@ object LaunchPolicyInstaller {
                         )
                     }
                     is ServerLaunchPatch.Result.AlreadyApplied -> {
-                        keptPackages.add(result.packageName)
                         Log.i(
                             TAG,
                             "seInfo override already set for ${result.packageName}: " +
@@ -84,6 +47,7 @@ object LaunchPolicyInstaller {
                     }
                     is ServerLaunchPatch.Result.PackageMissing -> {
                         Log.w(TAG, "Tracked package missing from PMS: ${result.packageName}")
+                        continue
                     }
                     is ServerLaunchPatch.Result.NotEligible -> {
                         Log.w(
@@ -91,8 +55,11 @@ object LaunchPolicyInstaller {
                             "Tracked package is no longer installer-managed system app: " +
                                 "package=${result.packageName}, sharedUserId=${result.sharedUserId}, uid=${result.appUid ?: -1}"
                         )
+                        continue
                     }
                 }
+
+                keptPackages.add(packageName)
             }
 
             if (keptPackages != trackedPackages) {
