@@ -3,8 +3,10 @@ export const INSTALLER_PACKAGE = "com.penumbraos.systeminjector";
 export const EXPLOIT_PACKAGE = "com.penumbraos.systeminjector.exploit";
 
 export const INSTALLER_ACTION = "com.penumbraos.systeminjector.INSTALL";
-export const EXPLOIT_STAGE1_ACTION = "com.penumbraos.systeminjector.exploit.STAGE1";
-export const EXPLOIT_STAGE2_ACTION = "com.penumbraos.systeminjector.exploit.STAGE2";
+export const EXPLOIT_STAGE1_ACTION =
+  "com.penumbraos.systeminjector.exploit.STAGE1";
+export const EXPLOIT_STAGE2_ACTION =
+  "com.penumbraos.systeminjector.exploit.STAGE2";
 
 /** Explicit component targets (bypasses stopped-state restriction on fresh installs) */
 export const EXPLOIT_RECEIVER = `${EXPLOIT_PACKAGE}/.InstallReceiver`;
@@ -28,5 +30,7 @@ export const SYSTEM_READY_POLL_MS = 2000;
 export const SYSTEM_READY_SETTLE_MS = 3000;
 
 /** Default APK locations (relative to project root) */
-export const INSTALLER_APK = "../installer/build/outputs/apk/debug/installer-debug.apk";
-export const EXPLOIT_APK = "../exploit/build/outputs/apk/debug/exploit-debug.apk";
+export const INSTALLER_APK =
+  "../installer/build/outputs/apk/release/installer-release.apk";
+export const EXPLOIT_APK =
+  "../exploit/build/outputs/apk/release/exploit-release.apk";
