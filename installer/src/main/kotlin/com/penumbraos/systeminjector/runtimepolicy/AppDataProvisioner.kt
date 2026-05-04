@@ -152,7 +152,7 @@ object AppDataProvisioner {
         val dePath = appInfo?.let { readPublicStringField(it, "deviceProtectedDataDir") }
         val ceExists = cePath?.let { File(it).exists() } ?: false
         val deExists = dePath?.let { File(it).exists() } ?: false
-        Log.i(
+        Log.w(
             TAG,
             "App-data provisioning $phase: " +
                 "package=$packageName, " +

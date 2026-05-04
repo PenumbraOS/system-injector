@@ -56,19 +56,19 @@ object ApkPatcher {
 
         val packageName = extractPackageName(inputApk)
         val targetSdkVersion = extractTargetSdkVersion(inputApk)
-        Log.i(TAG, "Extracted package name: $packageName")
-        Log.i(TAG, "Extracted targetSdkVersion: $targetSdkVersion")
+        Log.w(TAG, "Extracted package name: $packageName")
+        Log.w(TAG, "Extracted targetSdkVersion: $targetSdkVersion")
 
         val patchedApk = File(workDir, "patched.apk")
         patchManifest(inputApk, patchedApk)
-        Log.i(TAG, "Manifest patched: added sharedUserId")
+        Log.w(TAG, "Manifest patched: added sharedUserId")
 
         val signedApk = File(workDir, "signed.apk")
         sign(patchedApk, signedApk, assetOpener)
-        Log.i(TAG, "APK re-signed")
+        Log.w(TAG, "APK re-signed")
 
         verify(signedApk)
-        Log.i(TAG, "Signature verified: matches TARGET_CERT_HEX")
+        Log.w(TAG, "Signature verified: matches TARGET_CERT_HEX")
 
         // Clean up intermediate file
         patchedApk.delete()

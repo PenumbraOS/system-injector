@@ -33,9 +33,9 @@ object PolicyRegistry {
                 throw IllegalStateException("SharedPreferences commit failed while adding $packageName")
             }
             if (added) {
-                Log.i(TAG, "Tracked package added: $packageName")
+                Log.w(TAG, "Tracked package added: $packageName")
             } else {
-                Log.i(TAG, "Tracked package already present: $packageName")
+                Log.w(TAG, "Tracked package already present: $packageName")
             }
             true
         } catch (t: Throwable) {
@@ -50,13 +50,13 @@ object PolicyRegistry {
             val updated = prefs.getStringSet(KEY_TRACKED_PACKAGES, emptySet())?.toMutableSet() ?: mutableSetOf()
             val removed = updated.remove(packageName)
             if (!removed) {
-                Log.i(TAG, "Tracked package absent, nothing to remove: $packageName")
+                Log.w(TAG, "Tracked package absent, nothing to remove: $packageName")
                 return true
             }
             if (!prefs.edit().putStringSet(KEY_TRACKED_PACKAGES, updated).commit()) {
                 throw IllegalStateException("SharedPreferences commit failed while removing $packageName")
             }
-            Log.i(TAG, "Tracked package removed: $packageName")
+            Log.w(TAG, "Tracked package removed: $packageName")
             true
         } catch (t: Throwable) {
             Log.e(TAG, "Failed to remove tracked package $packageName", t)
@@ -70,7 +70,7 @@ object PolicyRegistry {
             if (!prefs.edit().putStringSet(KEY_TRACKED_PACKAGES, packageNames.toSet()).commit()) {
                 throw IllegalStateException("SharedPreferences commit failed while replacing tracked packages")
             }
-            Log.i(TAG, "Tracked package registry replaced with ${packageNames.size} entries")
+            Log.w(TAG, "Tracked package registry replaced with ${packageNames.size} entries")
             true
         } catch (t: Throwable) {
             Log.e(TAG, "Failed to replace tracked package registry", t)

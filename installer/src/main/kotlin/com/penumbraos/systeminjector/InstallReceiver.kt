@@ -65,7 +65,7 @@ class InstallReceiver : BroadcastReceiver() {
 
     /** Install an APK file. */
     fun installFrom(context: Context, inputApk: File) {
-        Log.i(TAG, "Starting install of ${inputApk.absolutePath}")
+        Log.w(TAG, "Starting install of ${inputApk.absolutePath}")
 
         if (!inputApk.exists()) {
             Log.e(TAG, "APK not found: ${inputApk.absolutePath}")
@@ -79,18 +79,18 @@ class InstallReceiver : BroadcastReceiver() {
             workDir = workDir
         )
 
-        Log.i(TAG, "Patched package: ${result.packageName}")
+        Log.w(TAG, "Patched package: ${result.packageName}")
 
         // If the package is already installed, uninstall it first
         if (isPackageInstalled(context, result.packageName)) {
-            Log.i(TAG, "Package ${result.packageName} already installed, uninstalling...")
+            Log.w(TAG, "Package ${result.packageName} already installed, uninstalling...")
             val proc = ProcessBuilder("pm", "uninstall", result.packageName).start()
             proc.waitFor()
             val exitCode = proc.exitValue()
             check(exitCode == 0) {
                 "pm uninstall ${result.packageName} failed with exit code $exitCode"
             }
-            Log.i(TAG, "Existing package uninstalled")
+            Log.w(TAG, "Existing package uninstalled")
         }
 
         // Step 4: Copy to /data/app/
@@ -108,12 +108,12 @@ class InstallReceiver : BroadcastReceiver() {
 
         // Set correct permissions (system:system, 0644)
         Os.chmod(targetApk.absolutePath, 420) // 0644 octal = 420 decimal
-        Log.i(TAG, "APK copied to ${targetApk.absolutePath}")
+        Log.w(TAG, "APK copied to ${targetApk.absolutePath}")
 
         // Extract native libraries from APK to appDir/lib/<ISA>/
         val primaryCpuAbi = extractNativeLibs(targetApk, appDir)
         if (primaryCpuAbi != null) {
-            Log.i(TAG, "Extracted native libs for ABI: $primaryCpuAbi")
+            Log.w(TAG, "Extracted native libs for ABI: $primaryCpuAbi")
         }
 
         SignatureInjector.inject(
@@ -122,7 +122,7 @@ class InstallReceiver : BroadcastReceiver() {
             sharedUserId = 1000,
             primaryCpuAbi = primaryCpuAbi
         )
-        Log.i(TAG, "packages-backup.xml written")
+        Log.w(TAG, "packages-backup.xml written")
 
 // TODO: This doesn't fix the data provisioning problem. Kept around for now
 //        when (val provisionResult = AppDataProvisioner.ensureProvisionedForInstall(
@@ -131,7 +131,7 @@ class InstallReceiver : BroadcastReceiver() {
 //            targetSdkVersion = result.targetSdkVersion,
 //        )) {
 //            is AppDataProvisioner.Result.Applied -> {
-//                Log.i(
+//                Log.w(
 //                    TAG,
 //                    "Install-time app-data provisioned for ${provisionResult.packageName}: " +
 //                        "userId=${provisionResult.userId}, " +
@@ -165,7 +165,7 @@ class InstallReceiver : BroadcastReceiver() {
         inputApk.delete()
 
         // Kill system_server to trigger reboot
-        Log.i(TAG, "Killing system_server to apply changes...")
+        Log.w(TAG, "Killing system_server to apply changes...")
         Os.kill(Os.getpid(), 9)
     }
 
@@ -219,7 +219,7 @@ class InstallReceiver : BroadcastReceiver() {
                     }
                 }
                 Os.chmod(outFile.absolutePath, 493) // 0755
-                Log.i(TAG, "Extracted: $name -> ${outFile.absolutePath}")
+                Log.w(TAG, "Extracted: $name -> ${outFile.absolutePath}")
             }
         }
 

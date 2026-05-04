@@ -62,7 +62,7 @@ class StagingProvider : ContentProvider() {
 
         val file = File(stagingDir(), filename)
 
-        Log.i(TAG, "StagingProvider: openFile $filename (mode=$mode)")
+        Log.w(TAG, "StagingProvider: openFile $filename (mode=$mode)")
 
         if (!mode.contains("w")) {
             // Read mode: return a pipe that feeds the file's contents to the caller
@@ -99,7 +99,7 @@ class StagingProvider : ContentProvider() {
                         input.copyTo(out)
                     }
                 }
-                Log.i(TAG, "StagingProvider: staged $filename (${file.length()} bytes)")
+                Log.w(TAG, "StagingProvider: staged $filename (${file.length()} bytes)")
             } catch (e: Exception) {
                 Log.e(TAG, "StagingProvider: error writing $filename", e)
             } finally {
@@ -138,7 +138,7 @@ class StagingProvider : ContentProvider() {
             return null
         }
 
-        Log.i(TAG, "StagingProvider: triggering install of ${stagedApk.absolutePath}")
+        Log.w(TAG, "StagingProvider: triggering install of ${stagedApk.absolutePath}")
 
         Thread {
             try {

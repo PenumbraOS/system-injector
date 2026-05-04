@@ -35,7 +35,7 @@ class PackageEventReceiver : BroadcastReceiver() {
         if (action == Intent.ACTION_PACKAGE_REMOVED) {
             val replacing = intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)
             if (replacing) {
-                Log.i(TAG, "Ignoring PACKAGE_REMOVED during replace for $packageName")
+                Log.w(TAG, "Ignoring PACKAGE_REMOVED during replace for $packageName")
                 return
             }
         }

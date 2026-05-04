@@ -10,23 +10,23 @@ object LaunchPolicyInstaller {
     fun refreshPolicies(context: Context) {
         try {
             if (isDisabled()) {
-                Log.i(TAG, "Runtime policy disabled via $PROP_DISABLE")
+                Log.w(TAG, "Runtime policy disabled via $PROP_DISABLE")
                 return
             }
 
             val trackedPackages = PolicyRegistry.loadTrackedPackages(context)
             if (trackedPackages.isEmpty()) {
-                Log.i(TAG, "No tracked packages registered")
+                Log.w(TAG, "No tracked packages registered")
                 return
             }
 
-            Log.i(TAG, "Refreshing runtime policy for ${trackedPackages.size} tracked package(s)")
+            Log.w(TAG, "Refreshing runtime policy for ${trackedPackages.size} tracked package(s)")
             val keptPackages = linkedSetOf<String>()
 
             for (packageName in trackedPackages.sorted()) {
                 when (val result = ServerLaunchPatch.applyOverride(context, packageName)) {
                     is ServerLaunchPatch.Result.Applied -> {
-                        Log.i(
+                        Log.w(
                             TAG,
                             "Applied seInfo override for ${result.packageName}: " +
                                 "base=${result.baseSeInfo ?: "<null>"}, " +
@@ -37,7 +37,7 @@ object LaunchPolicyInstaller {
                         )
                     }
                     is ServerLaunchPatch.Result.AlreadyApplied -> {
-                        Log.i(
+                        Log.w(
                             TAG,
                             "seInfo override already set for ${result.packageName}: " +
                                 "base=${result.baseSeInfo ?: "<null>"}, " +
@@ -64,7 +64,7 @@ object LaunchPolicyInstaller {
 
             if (keptPackages != trackedPackages) {
                 if (PolicyRegistry.replaceTrackedPackages(context, keptPackages)) {
-                    Log.i(
+                    Log.w(
                         TAG,
                         "Pruned tracked package registry from ${trackedPackages.size} to ${keptPackages.size} entries"
                     )

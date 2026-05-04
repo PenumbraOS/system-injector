@@ -25,7 +25,7 @@ class BootReceiver : BroadcastReceiver() {
             return
         }
 
-        Log.i(TAG, "BootReceiver triggered by $action")
+        Log.w(TAG, "BootReceiver triggered by $action")
         LaunchPolicyInstaller.refreshPolicies(context)
     }
 }

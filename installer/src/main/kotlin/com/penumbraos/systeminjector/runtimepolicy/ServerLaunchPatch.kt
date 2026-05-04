@@ -74,7 +74,7 @@ object ServerLaunchPatch {
         val overrideAfter = invokeNoArgString(pkgState, "getOverrideSeInfo")
         val effectiveAfter = overrideAfter ?: baseSeInfo
 
-        Log.i(
+        Log.w(
             TAG,
             "Applied PackageState override for $packageName: " +
                 "base=${baseSeInfo ?: "<null>"}, " +
@@ -128,7 +128,7 @@ object ServerLaunchPatch {
             val appInfo = context.packageManager.getApplicationInfo(packageName, 0)
             val seInfo = readPublicStringField(appInfo, "seInfo")
             val seInfoUser = readPublicStringField(appInfo, "seInfoUser")
-            Log.i(
+            Log.w(
                 TAG,
                 "PackageManager ApplicationInfo after override: " +
                     "package=${appInfo.packageName}, " +
@@ -152,7 +152,7 @@ object ServerLaunchPatch {
         val appInfo = getApplicationInfo(context, packageName)
         val appSeInfo = appInfo?.let { readPublicStringField(it, "seInfo") }
         val appSeInfoUser = appInfo?.let { readPublicStringField(it, "seInfoUser") }
-        Log.i(
+        Log.w(
             TAG,
             "PackageState $phase: " +
                 "package=$packageName, " +
