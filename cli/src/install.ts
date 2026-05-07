@@ -104,6 +104,14 @@ export async function bootstrap(
  * Stages the APK into system_server's cache via a ContentProvider
  * and triggers the install.
  */
+function parseDuplicatePackage(output: string): string | null {
+  return output.match(/DUPLICATE_PACKAGE:([A-Za-z0-9._]+)/)?.[1] ?? null;
+}
+
+function isInstallOk(output: string): boolean {
+  return output.includes("OK");
+}
+
 export async function installApk(apkPath: string): Promise<void> {
   const resolvedApk = path.resolve(apkPath);
   if (!fs.existsSync(resolvedApk)) {
@@ -129,7 +137,20 @@ export async function installApk(apkPath: string): Promise<void> {
 
   console.log("[2/3] Triggering system install...");
   console.log("       (device will crash once — this is expected)");
-  await adb.contentCall(STAGING_URI, "install", apkName);
+  let installOutput = await adb.contentCall(STAGING_URI, "install", apkName);
+
+  const duplicatePackage = parseDuplicatePackage(installOutput);
+  if (duplicatePackage) {
+    console.log(`       Package ${duplicatePackage} is already installed; uninstalling...`);
+    await adb.uninstall(duplicatePackage);
+
+    console.log("       Retrying system install...");
+    installOutput = await adb.contentCall(STAGING_URI, "install", apkName);
+  }
+
+  if (!isInstallOk(installOutput)) {
+    throw new Error(`System install failed: ${installOutput}`);
+  }
 
   console.log("[3/3] Waiting for system to come back...");
   await adb.waitForSystemReady(SYSTEM_READY_TIMEOUT_MS, SYSTEM_READY_POLL_MS, SYSTEM_READY_SETTLE_MS);

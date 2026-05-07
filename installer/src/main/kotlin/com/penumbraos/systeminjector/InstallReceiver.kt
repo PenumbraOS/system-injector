@@ -81,18 +81,6 @@ class InstallReceiver : BroadcastReceiver() {
 
         Log.w(TAG, "Patched package: ${result.packageName}")
 
-        // If the package is already installed, uninstall it first
-        if (isPackageInstalled(context, result.packageName)) {
-            Log.w(TAG, "Package ${result.packageName} already installed, uninstalling...")
-            val proc = ProcessBuilder("pm", "uninstall", result.packageName).start()
-            proc.waitFor()
-            val exitCode = proc.exitValue()
-            check(exitCode == 0) {
-                "pm uninstall ${result.packageName} failed with exit code $exitCode"
-            }
-            Log.w(TAG, "Existing package uninstalled")
-        }
-
         // Step 4: Copy to /data/app/
         val appDirName = "${result.packageName}-injected"
         val appDir = File("/data/app/$appDirName")
@@ -224,14 +212,5 @@ class InstallReceiver : BroadcastReceiver() {
         }
 
         return detectedAbi
-    }
-
-    private fun isPackageInstalled(context: Context, packageName: String): Boolean {
-        return try {
-            context.packageManager.getPackageInfo(packageName, 0)
-            true
-        } catch (_: android.content.pm.PackageManager.NameNotFoundException) {
-            false
-        }
     }
 }

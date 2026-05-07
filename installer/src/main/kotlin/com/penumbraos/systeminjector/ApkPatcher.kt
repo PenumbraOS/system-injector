@@ -80,7 +80,7 @@ object ApkPatcher {
      * Extract package name using Android framework's PackageParser (hidden API).
      * Available on Android 12 (API 31/32).
      */
-    private fun extractPackageName(apk: File): String {
+    fun extractPackageName(apk: File): String {
         val pkg = parsePackage(apk)
         val packageNameField = pkg.javaClass.getField("packageName")
         return packageNameField.get(pkg) as String

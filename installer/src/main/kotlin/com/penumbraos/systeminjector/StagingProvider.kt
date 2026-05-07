@@ -44,6 +44,16 @@ class StagingProvider : ContentProvider() {
     companion object {
         private const val TAG = "SystemInjector"
         const val AUTHORITY = "com.penumbraos.systeminjector.staging"
+        const val RESULT_MESSAGE = "message"
+    }
+
+    private fun isPackageInstalled(packageName: String): Boolean {
+        return try {
+            context!!.packageManager.getPackageInfo(packageName, 0)
+            true
+        } catch (_: android.content.pm.PackageManager.NameNotFoundException) {
+            false
+        }
     }
 
     private fun stagingDir(): File {
@@ -113,19 +123,23 @@ class StagingProvider : ContentProvider() {
     /**
      * Handle `content call --method install --arg <filename>`.
      *
-     * Resolves the staged APK and delegates to [InstallReceiver.installFrom] on a
+     * Checks if the package ID is already installed, then delegates to [InstallReceiver.installFrom] on a
      * background thread (the install kills system_server at the end).
      */
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle? {
         if (method != "install") {
             Log.e(TAG, "StagingProvider: unknown method '$method'")
-            return null
+            return Bundle().apply {
+                putString(RESULT_MESSAGE, "Unknown method: $method")
+            }
         }
 
         val filename = arg
         if (filename.isNullOrBlank()) {
             Log.e(TAG, "StagingProvider: install called without filename arg")
-            return null
+            return Bundle().apply {
+                putString(RESULT_MESSAGE, "Missing install filename")
+            }
         }
 
         require(!filename.contains("/") && !filename.contains("..")) {
@@ -135,7 +149,25 @@ class StagingProvider : ContentProvider() {
         val stagedApk = File(stagingDir(), filename)
         if (!stagedApk.exists()) {
             Log.e(TAG, "StagingProvider: staged file not found: ${stagedApk.absolutePath}")
-            return null
+            return Bundle().apply {
+                putString(RESULT_MESSAGE, "Staged file not found: $filename")
+            }
+        }
+
+        val packageName = try {
+            ApkPatcher.extractPackageName(stagedApk)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed reading package name from staged APK", e)
+            return Bundle().apply {
+                putString(RESULT_MESSAGE, e.message ?: "Failed reading package name")
+            }
+        }
+
+        if (isPackageInstalled(packageName)) {
+            Log.w(TAG, "Duplicate package detected for $packageName")
+            return Bundle().apply {
+                putString(RESULT_MESSAGE, "DUPLICATE_PACKAGE:$packageName")
+            }
         }
 
         Log.w(TAG, "StagingProvider: triggering install of ${stagedApk.absolutePath}")
@@ -150,7 +182,9 @@ class StagingProvider : ContentProvider() {
             }
         }.start()
 
-        return Bundle()
+        return Bundle().apply {
+            putString(RESULT_MESSAGE, "OK")
+        }
     }
 
     // Required overrides — not used
